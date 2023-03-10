@@ -59,7 +59,7 @@ pip install -r requirements.txt
 ### Training 
 
 ```
-python -m src.main ---wandb --name trial --train_data <path to train csv file> --validation_data <path to valid csv file> --image_key path --caption_key caption --device_id 0
+python -m src.main ---wandb --name trial --train_data dsets/cifar10_like_cc_train.csv --validation_data dsets/cifar10_like_cc_Valid.csv --image_key path --caption_key caption --device_id 0
 ```
 
 Your train/validation csv/tsv file should have 2 columns containing captions and the path to corresponding images on the machine. this script does not download the images for the captions directly. To download the images from their URL for CC3M and/or CC12M, use our `utils/download.py` script.
