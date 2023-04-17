@@ -96,7 +96,6 @@ def get_linear_probe_metrics(model, train_dataloader, test_dataloader, options):
 
     model.eval()
     umodel = model.module if(options.distributed) else model
-    
     images = None
     labels = None
     with torch.no_grad():

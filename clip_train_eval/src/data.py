@@ -17,12 +17,11 @@ class ImageCaptionDataset(Dataset):
         logging.debug(f"Loading aligned data from {path}")
 
         df = pd.read_csv(path, sep = delimiter)
-
         self.root = os.path.dirname(path)
         self.images = df[image_key].tolist()
         self.captions = processor.process_text(df[caption_key].tolist())
+
         self.processor = processor
-        
         self.inmodal = inmodal
         if(inmodal):
             self.augment_captions = processor.process_text([_augment_text(caption) for caption in df[caption_key].tolist()])
@@ -42,7 +41,9 @@ class ImageCaptionDataset(Dataset):
         else:  
             item["input_ids"] = self.captions["input_ids"][idx]
             item["attention_mask"] = self.captions["attention_mask"][idx]
+            
             item["pixel_values"] = self.processor.process_image(Image.open(os.path.join(self.root, self.images[idx])))
+            item["index"] = idx
             
         return item
 
@@ -53,7 +54,6 @@ def get_train_dataloader(options, processor):
     batch_size = options.batch_size
 
     dataset = ImageCaptionDataset(path, image_key = options.image_key, caption_key = options.caption_key, delimiter = options.delimiter, processor = processor, inmodal = options.inmodal)
-        
     sampler = DistributedSampler(dataset) if(options.distributed) else None
 
     dataloader = DataLoader(dataset, batch_size = batch_size, shuffle = (sampler is None), num_workers = options.num_workers, pin_memory = True, sampler = sampler, drop_last = True)

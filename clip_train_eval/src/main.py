@@ -6,6 +6,7 @@ import sys
 import time
 import wandb
 import torch
+import csv
 import logging
 import warnings
 import numpy as np
@@ -16,8 +17,11 @@ import torch.multiprocessing as mp
 import torch.backends.cudnn as cudnn
 from torch.cuda.amp import GradScaler
 from torch.nn.parallel import DistributedDataParallel as DDP
-
+from torch.nn import CosineSimilarity
 from pkgs.openai.clip import load as load_model
+from tqdm import tqdm    
+import pandas as pd
+import matplotlib.pyplot as plt 
 
 from .train import train
 from .evaluate import evaluate
@@ -67,6 +71,7 @@ def worker(rank, options, logger):
 
     optimizer = None
     scheduler = None
+    
     if(data["train"] is not None):        
         weight_decay_parameters = []
         no_weight_decay_parameters = []
@@ -82,6 +87,7 @@ def worker(rank, options, logger):
         scheduler = cosine_scheduler(optimizer, options.lr, options.num_warmup_steps, data["train"].num_batches * options.epochs)
 
     start_epoch = 0
+    
     if(options.checkpoint is not None):
         if(os.path.isfile(options.checkpoint)):
             checkpoint = torch.load(options.checkpoint, map_location = options.device)
@@ -105,7 +111,8 @@ def worker(rank, options, logger):
         wandb.save(os.path.join(options.log_dir_path, "params.txt"))
 
     evaluate(start_epoch, model, processor, data, options)
-
+    
+    
     if(data["train"] is not None):
         options.checkpoints_dir_path = os.path.join(options.log_dir_path, "checkpoints")
         os.makedirs(options.checkpoints_dir_path, exist_ok = True)
@@ -125,7 +132,7 @@ def worker(rank, options, logger):
                 logging.info(f"Finished Epoch {epoch}, Time Taken: {end - start:.3f}")
 
             metrics = evaluate(epoch, model, processor, data, options)
-
+            
             if(options.master):
                 checkpoint = {"epoch": epoch, "name": options.name, "state_dict": model.state_dict(), "optimizer": optimizer.state_dict()}
                 torch.save(checkpoint, os.path.join(options.checkpoints_dir_path, f"epoch_{epoch}.pt"))
@@ -133,7 +140,6 @@ def worker(rank, options, logger):
                     if(metrics["loss"] < best_loss):
                         best_loss = metrics["loss"]
                         torch.save(checkpoint, os.path.join(options.checkpoints_dir_path, f"epoch.best.pt"))
-
     if(options.distributed):
         dist.destroy_process_group()
 
@@ -150,7 +156,6 @@ if(__name__ == "__main__"):
     logger, listener = get_logger(options.log_file_path)
 
     listener.start()
-
     ngpus = torch.cuda.device_count()
     if(ngpus == 0 or options.device == "cpu"):
         options.device = "cpu"
