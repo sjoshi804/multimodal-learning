@@ -12,7 +12,7 @@ def partition_by_caption(classes: List[str], captions: List[str], verbose: bool 
         if "/" in latent_class:
             latent_classes = latent_class.split("/")
             latent_classes = [word.strip() for word in latent_classes]
-        return any([latent_class in caption for latent_class in latent_classes])
+        return any([lc in caption for lc in latent_classes])
 
     for i, caption in tqdm(enumerate(captions), total=len(captions), disable=not verbose):
         for latent_class in classes:
