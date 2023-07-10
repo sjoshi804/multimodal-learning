@@ -45,6 +45,7 @@ def parse_args():
     parser.add_argument("--cylambda2", type = float, default = 0, help = "Cyclic regularization lambda 2")
     parser.add_argument("--checkpoint", default = None, type = str, help = "Path to checkpoint to resume training")
     parser.add_argument("--pretrained", default = False, action = "store_true", help = "Use the OpenAI pretrained models")
+    parser.add_argument("--full", default = False, action = "store_true", help = "Evaluate on all current datasets")
 
     options = parser.parse_args()
     return options

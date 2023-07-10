@@ -157,7 +157,15 @@ def get_linear_probe_metrics(model, train_dataloader, test_dataloader, options):
     optimizer = optim.AdamW([{"params": [parameter for name, parameter in classifier.named_parameters() if(("bias" in name) and parameter.requires_grad)], "weight_decay": 0}, {"params": [parameter for name, parameter in classifier.named_parameters() if(("bias" not in name) and parameter.requires_grad)], "weight_decay": 0.01}])
     scheduler = cosine_scheduler(optimizer, 0.005, 0, len(train_dataloader) * options.linear_probe_num_epochs)
     criterion = nn.CrossEntropyLoss().to(options.device)
-    
+    perclass_corr = torch.zeros(output_dim)
+    perclass_tot = torch.zeros(output_dim)
+    import pickle
+    partition_file = open('/home/arnavj/multimodal-learning/clip_train_eval/analysis/rand_class_size', 'rb')
+    partition = pickle.load(partition_file)
+    partition_file2 = open('/home/arnavj/multimodal-learning/clip_train_eval/analysis/partition_imagenet_like', 'rb')
+    partition2 = pickle.load(partition_file2)
+    print(len(partition2.keys()))
+    per_class = open('/home/arnavj/multimodal-learning/clip_train_eval/analysis/per_class', 'w', encoding='UTF8', newline = '')
     pbar = tqdm(range(options.linear_probe_num_epochs))
     for epoch in pbar:
         cbar = tqdm(train_dataloader, leave = False)
@@ -183,7 +191,11 @@ def get_linear_probe_metrics(model, train_dataloader, test_dataloader, options):
                 logits = classifier(umodel.get_image_features(image))
                 prediction = torch.argmax(logits, dim = 1)
                 correct += torch.sum(prediction == label).item()
-
+                label = label.to('cpu')
+                prediction = prediction.to('cpu')
+                for i in range(len(label)):
+                    perclass_corr[prediction[i]] += (prediction[i] == label[i])
+                    perclass_tot[prediction[i]] += 1
             results = {f"linear_probe_accuracy": correct / test_dataloader.num_samples}
         else:
             correct = torch.zeros(output_dim).to(options.device)
@@ -200,7 +212,22 @@ def get_linear_probe_metrics(model, train_dataloader, test_dataloader, options):
                 total += temp.sum(1)
 
             results = {f"linear_probe_mean_per_class": (correct / total).mean().cpu().item()}
-        
+    import matplotlib.pyplot as plt
+    '''
+    perclass_corr[134] += perclass_corr[517]
+    perclass_tot[134] += perclass_tot[517]
+    
+    perclass_corr = np.delete(perclass_corr, [517])
+    perclass_tot = np.delete(perclass_tot, [517])
+    to_sort = []
+    for i in range(len(perclass_corr)):
+        to_sort.append(((partition[i]), str((perclass_corr[i]/perclass_tot[i]).item()), str(perclass_tot[i]), list(partition2.keys())[i]))
+    to_sort.sort()
+    for i in to_sort:    
+        per_class.write(str(i[0]) + " " + i[1] + " " + i[2] + " " + i[3] + "\n")
+    plt.xlim(0,10)
+    plt.savefig('perclass_acc_2')
+    '''
     logging.info("Finished linear probe testing")
     return results
 

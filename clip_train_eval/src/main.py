@@ -22,6 +22,7 @@ from pkgs.openai.clip import load as load_model
 from .train import train
 from .evaluate import evaluate
 from .data import load as load_data
+from .data import load_eval as load2
 from .parser import parse_args
 from .scheduler import cosine_scheduler
 from .logger import get_logger, set_logger
@@ -62,9 +63,12 @@ def worker(rank, options, logger):
         model.to(options.device)
         if(options.distributed):
             model = DDP(model, device_ids = [options.device_ids[options.rank]])
-        
+    if(options.full):
+        options.eval_data_type = "CIFAR10"
+        options.eval_test_data_dir = '/data/cifar10'
+        options.eval_train_data_dir = '/data/cifar10'
     data = load_data(options, processor)
-
+    print(str(data['train'] == None) + " " + str(data['eval_test'] == None) + " " + str(data['eval_train'] == None) + " ")
     optimizer = None
     scheduler = None
     if(data["train"] is not None):        
@@ -103,8 +107,38 @@ def worker(rank, options, logger):
         wandb.init(project = "efficient-multimodal-learning", notes = options.notes, tags = [], config = vars(options))
         wandb.run.name = options.name
         wandb.save(os.path.join(options.log_dir_path, "params.txt"))
+    if(options.full and start_epoch == 30):
+        logging.info("CIFAR10 Zero Shot")
+        evaluate(start_epoch, model, processor, data, options)
+        options.linear_probe = True
+        data = load2(options, processor, data)
+        logging.info("CIFAR10 Linear Probe")
+        evaluate(start_epoch, model, processor, data, options)
+        options.eval_data_type = "CIFAR100"
+        options.eval_test_data_dir = '/data/cifar100'
+        options.eval_train_data_dir = '/data/cifar100'
+        options.linear_probe = False
+        data = load2(options, processor, data)
+        logging.info("CIFAR100 Zero Shot")
+        evaluate(start_epoch, model, processor, data, options)
+        options.linear_probe = True
+        data = load2(options, processor, data)
+        logging.info("CIFAR100 Linear Probe")
+        evaluate(start_epoch, model, processor, data, options)
+        options.eval_data_type = "ImageNet1K"
+        options.eval_test_data_dir = '/data/ILSVRC/test'
+        options.eval_train_data_dir = '/data/ILSVRC/train'
+        options.linear_probe = False
+        data = load2(options, processor, data)
+        logging.info("ImageNet1K Zero Shot")
+        evaluate(start_epoch, model, processor, data, options)
+        options.linear_probe = True
+        data = load2(options, processor, data)
+        logging.info("ImageNet1K Linear Probe")
 
-    evaluate(start_epoch, model, processor, data, options)
+        evaluate(start_epoch, model, processor, data, options)
+    else:
+        evaluate(start_epoch, model, processor, data, options)
 
     if(data["train"] is not None):
         options.checkpoints_dir_path = os.path.join(options.log_dir_path, "checkpoints")
