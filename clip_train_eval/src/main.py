@@ -167,7 +167,36 @@ def worker(rank, options, logger):
                     if(metrics["loss"] < best_loss):
                         best_loss = metrics["loss"]
                         torch.save(checkpoint, os.path.join(options.checkpoints_dir_path, f"epoch.best.pt"))
+<<<<<<< Updated upstream
 
+=======
+    
+    model.eval()
+    '''
+    cosvalues = []
+    dataloader = data["train"]
+    cos = CosineSimilarity(dim = 0, eps = 1e-6)
+    with torch.no_grad():
+        for batch_idx, (batch,index) in tqdm(enumerate(dataloader.dataset)): 
+            input_ids, attention_mask, pixel_values = batch["input_ids"].to(options.device, non_blocking = True), batch["attention_mask"].to(options.device, non_blocking = True), batch["pixel_values"].to(options.device, non_blocking = True) 
+            print(input_ids)
+            print(attention_mask)
+            print(pixel_values)
+            outputs = model(input_ids = input_ids.unsqueeze(0), attention_mask = attention_mask.unsqueeze(0), pixel_values = pixel_values.unsqueeze(0))
+            print(batch["index"])
+            print(outputs.image_embeds)
+            
+            cosvalues.append([index, cos(outputs.image_embeds[0], outputs.text_embeds[0]).item()])
+    cosvalues.sort(key = lambda x : x[1])      
+    with open('/home/arnavj/multimodal-learning/clip_train_eval/dsets/imagenet_like_small_test4.csv', 'w', encoding='UTF8', newline = '') as f:
+        f2 = open('/home/arnavj/multimodal-learning/clip_train_eval/dsets/imagenet_like_small.csv', 'r', encoding='UTF8', newline = '')
+        
+        lines = f2.readlines()
+        for i, _ in cosvalues:
+            f.write(str(_) + " " + lines[i + 1 ])
+
+    '''
+>>>>>>> Stashed changes
     if(options.distributed):
         dist.destroy_process_group()
 

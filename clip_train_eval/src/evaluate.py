@@ -182,7 +182,13 @@ def get_linear_probe_metrics(model, train_dataloader, test_dataloader, options):
         pbar.set_postfix({"loss": loss.item(), "lr": optimizer.param_groups[0]["lr"]})
 
     classifier.eval()
-    
+    '''
+    correcttot = np.empty(100, dtype=int)
+    tot = np.empty(100, dtype=int)
+    for i in range(0,100):
+        correcttot[i] = 0
+        tot[i] = 0
+    '''
     with torch.no_grad():
         if(metric == "accuracy"):
             correct = 0
@@ -191,11 +197,20 @@ def get_linear_probe_metrics(model, train_dataloader, test_dataloader, options):
                 logits = classifier(umodel.get_image_features(image))
                 prediction = torch.argmax(logits, dim = 1)
                 correct += torch.sum(prediction == label).item()
+<<<<<<< Updated upstream
                 label = label.to('cpu')
                 prediction = prediction.to('cpu')
                 for i in range(len(label)):
                     perclass_corr[prediction[i]] += (prediction[i] == label[i])
                     perclass_tot[prediction[i]] += 1
+=======
+                '''
+                for x in range(0, len(prediction)):
+                    
+                        tot[label[x]]+=1
+                        correcttot[label[x]] += (prediction[x] == label[x])
+                '''
+>>>>>>> Stashed changes
             results = {f"linear_probe_accuracy": correct / test_dataloader.num_samples}
         else:
             correct = torch.zeros(output_dim).to(options.device)
@@ -212,6 +227,7 @@ def get_linear_probe_metrics(model, train_dataloader, test_dataloader, options):
                 total += temp.sum(1)
 
             results = {f"linear_probe_mean_per_class": (correct / total).mean().cpu().item()}
+<<<<<<< Updated upstream
     import matplotlib.pyplot as plt
     '''
     perclass_corr[134] += perclass_corr[517]
@@ -227,8 +243,14 @@ def get_linear_probe_metrics(model, train_dataloader, test_dataloader, options):
         per_class.write(str(i[0]) + " " + i[1] + " " + i[2] + " " + i[3] + "\n")
     plt.xlim(0,10)
     plt.savefig('perclass_acc_2')
+=======
+    '''
+    for i in range(0,len(correcttot)):
+        print(str(correcttot[i]/tot[i]) + " "  + str(correcttot[i]) + " " + str(tot[i]))
+>>>>>>> Stashed changes
     '''
     logging.info("Finished linear probe testing")
+
     return results
 
 def evaluate(epoch, model, processor, data, options):
