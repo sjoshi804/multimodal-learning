@@ -197,20 +197,11 @@ def get_linear_probe_metrics(model, train_dataloader, test_dataloader, options):
                 logits = classifier(umodel.get_image_features(image))
                 prediction = torch.argmax(logits, dim = 1)
                 correct += torch.sum(prediction == label).item()
-<<<<<<< Updated upstream
                 label = label.to('cpu')
                 prediction = prediction.to('cpu')
                 for i in range(len(label)):
                     perclass_corr[prediction[i]] += (prediction[i] == label[i])
                     perclass_tot[prediction[i]] += 1
-=======
-                '''
-                for x in range(0, len(prediction)):
-                    
-                        tot[label[x]]+=1
-                        correcttot[label[x]] += (prediction[x] == label[x])
-                '''
->>>>>>> Stashed changes
             results = {f"linear_probe_accuracy": correct / test_dataloader.num_samples}
         else:
             correct = torch.zeros(output_dim).to(options.device)
