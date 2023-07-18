@@ -68,7 +68,6 @@ def worker(rank, options, logger):
         options.eval_test_data_dir = '/data/cifar10'
         options.eval_train_data_dir = '/data/cifar10'
     data = load_data(options, processor)
-    print(str(data['train'] == None) + " " + str(data['eval_test'] == None) + " " + str(data['eval_train'] == None) + " ")
     optimizer = None
     scheduler = None
     if(data["train"] is not None):        
