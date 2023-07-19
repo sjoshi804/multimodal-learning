@@ -2,6 +2,8 @@
 *help.py
 
 dsets
+image-text-full-cos-sim/
+partition_imagenet_like
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
