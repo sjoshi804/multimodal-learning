@@ -49,5 +49,9 @@ def parse_args():
     parser.add_argument("--classes", default = False, action = "store_true", help = "Get perclass evaluation")
     parser.add_argument("--predict", default = False, action = "store_true", help = "Get prediction spread of classes")
     parser.add_argument("--class_subset", default = False, action = "store_true", help = "Use a subset of classes for zero shot")
+
+    # New arguments
+    parser.add_argument("--curriculum", default = "", type = str, help = "Path to pickled curriculum file")
+
     options = parser.parse_args()
     return options

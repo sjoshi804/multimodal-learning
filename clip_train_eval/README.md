@@ -1,3 +1,13 @@
+# EFF MML
+
+python -m src.main --name "Name of Run" --train_data <path_to_dset_file>  --image_key file --epochs 30 --batch_size 512 --distributed --device_ids 0 1
+
+## Curriculum Learning 
+
+python -m src.main --name "easy_to_hard_curriculum" --train_data /home/sjoshi/multimodal-learning/clip_train_eval/dsets/sorted_full.csv --curriculum /home/sjoshi/multimodal-learning/clip_train_eval/dsets/easy_to_hard.pkl --image_key file --epochs 30 --batch_size 512 --distributed --distributed_init_method tcp://127.0.0.1:5433 --device_ids 2 3
+
+Based off of CyCLIP: 
+
 
 # CyCLIP &mdash; Official PyTorch Implementation
 ![Python 3.10](https://img.shields.io/badge/python-3.10-green.svg?style=plastic)
