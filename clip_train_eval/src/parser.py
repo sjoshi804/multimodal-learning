@@ -47,5 +47,8 @@ def parse_args():
     parser.add_argument("--pretrained", default = False, action = "store_true", help = "Use the OpenAI pretrained models")
     parser.add_argument("--full", default = False, action = "store_true", help = "Evaluate on all current datasets")
 
+    # New arguments
+    parser.add_argument("--curriculum", default = "", type = str, help = "Path to pickled curriculum file")
+
     options = parser.parse_args()
     return options

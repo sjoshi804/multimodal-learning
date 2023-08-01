@@ -9,13 +9,14 @@ import torch
 import logging
 import warnings
 import numpy as np
-import tensorflow as tf
 import torch.optim as optim
 import torch.distributed as dist
 import torch.multiprocessing as mp
 import torch.backends.cudnn as cudnn
 from torch.cuda.amp import GradScaler
 from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.utils.data import Subset
+import pickle
 
 from pkgs.openai.clip import load as load_model
 
@@ -146,11 +147,25 @@ def worker(rank, options, logger):
         scaler = GradScaler()
 
         best_loss = np.inf
+        
+        # Curriculum Learning implementation
+        curriculum = None
+        if options.curriculum != "":
+            with open(options.curriculum, "rb") as f:
+                curriculum = pickle.load(f)
+            data["train"].dataset = Subset(data["train"].dataset, range(len(data["train"].dataset)))
+            
+        # Main Training Loop
         for epoch in range(start_epoch + 1, options.epochs + 1):
             if(options.master): 
                 logging.info(f"Starting Epoch {epoch}")
 
             start = time.time()
+            
+            # Set current epoch training data according to curriculum if specified
+            if curriculum is not None:
+                data["train"].dataset.indices = curriculum[epoch]
+                
             train(epoch, model, data, optimizer, scheduler, scaler, options)
             end = time.time()
 
@@ -166,6 +181,7 @@ def worker(rank, options, logger):
                     if(metrics["loss"] < best_loss):
                         best_loss = metrics["loss"]
                         torch.save(checkpoint, os.path.join(options.checkpoints_dir_path, f"epoch.best.pt"))
+            
     if(options.distributed):
         dist.destroy_process_group()
 
