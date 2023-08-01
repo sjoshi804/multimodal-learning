@@ -218,27 +218,9 @@ def get_linear_probe_metrics(model, train_dataloader, test_dataloader, options):
                 total += temp.sum(1)
 
             results = {f"linear_probe_mean_per_class": (correct / total).mean().cpu().item()}
-<<<<<<< Updated upstream
-    import matplotlib.pyplot as plt
-    '''
-    perclass_corr[134] += perclass_corr[517]
-    perclass_tot[134] += perclass_tot[517]
-    
-    perclass_corr = np.delete(perclass_corr, [517])
-    perclass_tot = np.delete(perclass_tot, [517])
-    to_sort = []
-    for i in range(len(perclass_corr)):
-        to_sort.append(((partition[i]), str((perclass_corr[i]/perclass_tot[i]).item()), str(perclass_tot[i]), list(partition2.keys())[i]))
-    to_sort.sort()
-    for i in to_sort:    
-        per_class.write(str(i[0]) + " " + i[1] + " " + i[2] + " " + i[3] + "\n")
-    plt.xlim(0,10)
-    plt.savefig('perclass_acc_2')
-=======
     '''
     for i in range(0,len(correcttot)):
         print(str(correcttot[i]/tot[i]) + " "  + str(correcttot[i]) + " " + str(tot[i]))
->>>>>>> Stashed changes
     '''
     logging.info("Finished linear probe testing")
 
