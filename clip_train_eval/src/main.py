@@ -15,7 +15,6 @@ import torch.multiprocessing as mp
 import torch.backends.cudnn as cudnn
 from torch.cuda.amp import GradScaler
 from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.utils.data import Subset
 import pickle
 
 from pkgs.openai.clip import load as load_model
@@ -23,7 +22,7 @@ from pkgs.openai.clip import load as load_model
 from .train import train
 from .evaluate import evaluate
 from .data import load as load_data
-from .data import load_eval as load2
+from .data import load_eval as load2, get_revised_train_dataloader
 from .parser import parse_args
 from .scheduler import cosine_scheduler
 from .logger import get_logger, set_logger
@@ -153,8 +152,7 @@ def worker(rank, options, logger):
         if options.curriculum != "":
             with open(options.curriculum, "rb") as f:
                 curriculum = pickle.load(f)
-            data["train"].dataset = Subset(data["train"].dataset, range(len(data["train"].dataset)))
-            
+                
         # Main Training Loop
         for epoch in range(start_epoch + 1, options.epochs + 1):
             if(options.master): 
@@ -164,7 +162,7 @@ def worker(rank, options, logger):
             
             # Set current epoch training data according to curriculum if specified
             if curriculum is not None:
-                data["train"].dataset.indices = curriculum[epoch]
+                data["train"] = get_revised_train_dataloader(data["train"].dataset, curriculum[epoch], options)
                 
             train(epoch, model, data, optimizer, scheduler, scaler, options)
             end = time.time()

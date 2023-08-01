@@ -4,7 +4,7 @@ import logging
 import torchvision
 import pandas as pd
 from PIL import Image, ImageFile
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, Subset
 from torch.utils.data.distributed import DistributedSampler
 
 from utils.augment_text import _augment_text
@@ -53,13 +53,22 @@ def get_train_dataloader(options, processor):
     batch_size = options.batch_size
 
     dataset = ImageCaptionDataset(path, image_key = options.image_key, caption_key = options.caption_key, delimiter = options.delimiter, processor = processor, inmodal = options.inmodal)
-        
+    dataset = Subset(dataset, range(len(dataset)))
+    
     sampler = DistributedSampler(dataset) if(options.distributed) else None
 
-    dataloader = DataLoader(dataset, batch_size = batch_size, shuffle = (sampler is None), num_workers = options.num_workers, pin_memory = True, sampler = sampler, drop_last = True)
+    dataloader = DataLoader(Subset(dataset, range(len(dataset))), batch_size = batch_size, shuffle = (sampler is None), num_workers = options.num_workers, pin_memory = True, sampler = sampler, drop_last = True)
     dataloader.num_samples = len(dataloader) * batch_size 
     dataloader.num_batches = len(dataloader)
 
+    return dataloader
+
+def get_revised_train_dataloader(dataset: Subset, indices, options):
+    dataset.indices = indices
+    sampler = DistributedSampler(dataset) if(options.distributed) else None
+    dataloader = DataLoader(dataset, batch_size = options.batch_size, shuffle = (sampler is None), num_workers = options.num_workers, pin_memory = True, sampler = sampler, drop_last = True)
+    dataloader.num_samples = len(dataloader) * options.batch_size 
+    dataloader.num_batches = len(dataloader)
     return dataloader
 
 def get_validation_dataloader(options, processor):
