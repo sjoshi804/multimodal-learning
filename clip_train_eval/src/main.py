@@ -9,7 +9,6 @@ import torch
 import logging
 import warnings
 import numpy as np
-import tensorflow as tf
 import torch.optim as optim
 import torch.distributed as dist
 import torch.multiprocessing as mp

@@ -47,6 +47,9 @@ def get_zeroshot_metrics(model, processor, test_dataloader, options):
 
     config = eval(open(f"{options.eval_test_data_dir}/classes.py", "r").read())
     classes, templates = config["classes"], config["templates"]
+    if options.class_subset:
+        sub_class = [134, 254, 288, 291, 292, 308, 309, 312, 323, 341, 414, 417, 425, 429, 430, 435, 456, 460, 463, 468, 470, 472, 476, 483, 487, 492, 494, 497, 498, 506, 524, 525, 531, 535, 537, 552, 577, 578, 579, 581, 605, 619, 625, 642, 649, 654, 667, 669, 672, 678, 697, 702, 704, 705, 713, 717, 720, 725, 732, 737, 749, 750, 753, 760, 766, 777, 781, 786, 794, 804, 816, 818, 824, 833, 836, 838, 846, 850, 865, 867, 878, 882, 888, 889, 893, 907, 915, 916, 922, 927, 950, 953, 957, 962, 965, 967, 971, 972, 975, 977, 978, 981, 986, 988, 997]
+        classes = [x for idx, x in enumerate(classes) if idx in sub_class]
     with torch.no_grad():
         text_embeddings = []
         for c in tqdm(classes):
@@ -59,7 +62,9 @@ def get_zeroshot_metrics(model, processor, test_dataloader, options):
             text_embedding /= text_embedding.norm()
             text_embeddings.append(text_embedding)
         text_embeddings = torch.stack(text_embeddings, dim = 1).to(options.device)
-
+    if(options.predict):
+        predict_matrix = np.zeros((10, 10))
+        perclass_tot = torch.zeros(10)
     with torch.no_grad():
         topk = [1, 3, 5, 10]
         correct = {k: 0 for k in topk}
@@ -74,7 +79,29 @@ def get_zeroshot_metrics(model, processor, test_dataloader, options):
 
             for k in topk:
                 correct[k] += torch.sum(torch.any(predictions[:k], dim = 0)).item() 
-
+            if options.predict:
+                predictions = predictions.to('cpu')
+                label = label.to('cpu')
+                for i in range(len(label)):
+                    predict_matrix[label[i]][ranks[0][i]] += 1
+                    perclass_tot[label[i]]+=1
+    if(options.predict):
+        class_10 =  ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
+        import matplotlib.pyplot as plt
+        vals = np.count_nonzero(predict_matrix, axis=1)
+        for i in range(10):
+            plt.bar(class_10, np.divide(predict_matrix[i], perclass_tot[i]))
+            plt.xlabel('Class Names')
+            plt.xticks(
+                rotation=45, 
+                horizontalalignment='right',
+                fontweight='light',
+                fontsize='small'  
+            )
+            plt.ylabel('Percentage of Examples placed in Class')
+            plt.title('Distribution of Examples for Class ' + class_10[i] + ": Easy Zero Shot" )
+            plt.savefig("predict-easy/cifar10_zero_" + class_10[i] + ".png")
+            plt.clf()
     results = {f"zeroshot_top{k}": correct[k] / test_dataloader.num_samples for k in topk}
     logging.info("Finished zeroshot testing")
 
@@ -164,7 +191,6 @@ def get_linear_probe_metrics(model, train_dataloader, test_dataloader, options):
     partition = pickle.load(partition_file)
     partition_file2 = open('/home/arnavj/multimodal-learning/clip_train_eval/analysis/partition_imagenet_like', 'rb')
     partition2 = pickle.load(partition_file2)
-    print(len(partition2.keys()))
     per_class = open('/home/arnavj/multimodal-learning/clip_train_eval/analysis/per_class', 'w', encoding='UTF8', newline = '')
     pbar = tqdm(range(options.linear_probe_num_epochs))
     for epoch in pbar:
@@ -182,13 +208,7 @@ def get_linear_probe_metrics(model, train_dataloader, test_dataloader, options):
         pbar.set_postfix({"loss": loss.item(), "lr": optimizer.param_groups[0]["lr"]})
 
     classifier.eval()
-    '''
-    correcttot = np.empty(100, dtype=int)
-    tot = np.empty(100, dtype=int)
-    for i in range(0,100):
-        correcttot[i] = 0
-        tot[i] = 0
-    '''
+    predict_matrix = np.zeros((output_dim, output_dim))
     with torch.no_grad():
         if(metric == "accuracy"):
             correct = 0
@@ -199,9 +219,14 @@ def get_linear_probe_metrics(model, train_dataloader, test_dataloader, options):
                 correct += torch.sum(prediction == label).item()
                 label = label.to('cpu')
                 prediction = prediction.to('cpu')
-                for i in range(len(label)):
-                    perclass_corr[prediction[i]] += (prediction[i] == label[i])
-                    perclass_tot[prediction[i]] += 1
+                if options.predict:
+                    for i in range(len(label)):
+                        predict_matrix[label[i]][prediction[i]] += 1
+                        perclass_tot[label[i]] += 1
+                if options.classes:    
+                    for i in range(len(label)):
+                        perclass_corr[label[i]] += (prediction[i] == label[i])
+                        perclass_tot[label[i]] += 1
             results = {f"linear_probe_accuracy": correct / test_dataloader.num_samples}
         else:
             correct = torch.zeros(output_dim).to(options.device)
@@ -218,28 +243,44 @@ def get_linear_probe_metrics(model, train_dataloader, test_dataloader, options):
                 total += temp.sum(1)
 
             results = {f"linear_probe_mean_per_class": (correct / total).mean().cpu().item()}
-<<<<<<< Updated upstream
-    import matplotlib.pyplot as plt
-    '''
-    perclass_corr[134] += perclass_corr[517]
-    perclass_tot[134] += perclass_tot[517]
     
-    perclass_corr = np.delete(perclass_corr, [517])
-    perclass_tot = np.delete(perclass_tot, [517])
-    to_sort = []
-    for i in range(len(perclass_corr)):
-        to_sort.append(((partition[i]), str((perclass_corr[i]/perclass_tot[i]).item()), str(perclass_tot[i]), list(partition2.keys())[i]))
-    to_sort.sort()
-    for i in to_sort:    
-        per_class.write(str(i[0]) + " " + i[1] + " " + i[2] + " " + i[3] + "\n")
-    plt.xlim(0,10)
-    plt.savefig('perclass_acc_2')
-=======
-    '''
-    for i in range(0,len(correcttot)):
-        print(str(correcttot[i]/tot[i]) + " "  + str(correcttot[i]) + " " + str(tot[i]))
->>>>>>> Stashed changes
-    '''
+    if(options.predict):
+        class_10 =  ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
+        import matplotlib.pyplot as plt
+        vals = np.count_nonzero(predict_matrix, axis=1)
+        for i in range(10):
+            plt.bar(class_10, np.divide(predict_matrix[i], perclass_tot[i]))
+            plt.xlabel('Class Names')
+            plt.xticks(
+                rotation=45, 
+                horizontalalignment='right',
+                fontweight='light',
+                fontsize='small'  
+            )
+            plt.ylabel('Percentage of Examples placed in Class')
+            plt.title('Distribution of Examples for Class ' + class_10[i] + ": Easy Linear Probe" )
+            plt.savefig("predict-easy/cifar10_linear_" + class_10[i] + ".png")
+            plt.clf()
+    if(options.classes):
+        import matplotlib.pyplot as plt
+        perclass_corr[134] += perclass_corr[517]
+        perclass_tot[134] += perclass_tot[517]
+        
+        perclass_corr = np.delete(perclass_corr, [517])
+        perclass_tot = np.delete(perclass_tot, [517])
+        #to_sort = []
+        #for i in range(len(perclass_corr)):
+        #    to_sort.append(((partition[i]), str((perclass_corr[i]/perclass_tot[i]).item()), str(perclass_tot[i]), list(partition2.keys())[i]))
+        #to_sort.sort()
+        #for i in to_sort:    
+        #    per_class.write(str(i[0]) + " " + i[1] + " " + i[2] + " " + i[3] + "\n")
+        #plt.xlim(0,10)
+        #plt.savefig('perclass_acc_2')
+        with open('/home/arnavj/multimodal-learning/clip_train_eval/class-random.csv', 'w', encoding='UTF8', newline = '') as f:
+            for i in range(len(perclass_corr)):
+                f.write(str((perclass_corr[i]/perclass_tot[i]).item()) + "\n")
+
+    
     logging.info("Finished linear probe testing")
 
     return results
