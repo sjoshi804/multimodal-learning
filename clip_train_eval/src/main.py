@@ -162,7 +162,7 @@ def worker(rank, options, logger):
             
             # Set current epoch training data according to curriculum if specified
             if curriculum is not None:
-                data["train"] = get_revised_train_dataloader(data["train"].dataset, curriculum[epoch], options)
+                data["train"] = get_revised_train_dataloader(data["train"].dataset, curriculum[epoch - 1], options)
                 
             train(epoch, model, data, optimizer, scheduler, scaler, options)
             end = time.time()
