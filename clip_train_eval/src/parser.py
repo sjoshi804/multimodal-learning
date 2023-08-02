@@ -46,7 +46,7 @@ def parse_args():
     parser.add_argument("--checkpoint", default = None, type = str, help = "Path to checkpoint to resume training")
     parser.add_argument("--pretrained", default = False, action = "store_true", help = "Use the OpenAI pretrained models")
     parser.add_argument("--full", default = False, action = "store_true", help = "Evaluate on all current datasets")
-    parser.add_argument("--classes", default = False, action = "store_true", help = "Get perclass evaluation")
+    parser.add_argument("--classes", default = None, type = str, help = "Path for perclass evaluation")
     parser.add_argument("--predict", default = False, action = "store_true", help = "Get prediction spread of classes")
     parser.add_argument("--class_subset", default = False, action = "store_true", help = "Use a subset of classes for zero shot")
 

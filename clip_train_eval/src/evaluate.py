@@ -41,6 +41,48 @@ def get_validation_metrics(model, dataloader, options):
 
 def get_zeroshot_metrics(model, processor, test_dataloader, options):
     logging.info("Started zeroshot testing")
+    if(options.eval_data_type == "Caltech101"):
+        output_dim = 102
+        metric = "accuracy"
+    elif(options.eval_data_type == "CIFAR10"):
+        output_dim = 10
+        metric = "accuracy"
+    elif(options.eval_data_type == "CIFAR100"):
+        output_dim = 100
+        metric = "accuracy"
+    elif(options.eval_data_type == "DTD"):
+        output_dim = 47
+        metric = "accuracy"
+    elif(options.eval_data_type == "FGVCAircraft"):
+        output_dim = 100
+        metric = "accuracy"
+    elif(options.eval_data_type == "Flowers102"):
+        output_dim = 102
+        metric = "accuracy"
+    elif(options.eval_data_type == "Food101"):
+        output_dim = 101
+        metric = "accuracy"
+    elif(options.eval_data_type == "GTSRB"):
+        output_dim = 43
+        metric = "accuracy"
+    elif(options.eval_data_type == "ImageNet1K"):
+        output_dim = 1000
+        metric = "accuracy"
+    elif(options.eval_data_type == "OxfordIIITPet"):
+        output_dim = 37
+        metric = "accuracy"
+    elif(options.eval_data_type == "RenderedSST2"):
+        output_dim = 2
+        metric = "accuracy"
+    elif(options.eval_data_type == "StanfordCars"):
+        output_dim = 196
+        metric = "accuracy"
+    elif(options.eval_data_type == "STL10"):
+        output_dim = 10
+        metric = "accuracy"
+    elif(options.eval_data_type == "SVHN"):
+        output_dim = 10
+        metric = "accuracy"
 
     model.eval()
     umodel = model.module if(options.distributed) else model
@@ -63,8 +105,11 @@ def get_zeroshot_metrics(model, processor, test_dataloader, options):
             text_embeddings.append(text_embedding)
         text_embeddings = torch.stack(text_embeddings, dim = 1).to(options.device)
     if(options.predict):
-        predict_matrix = np.zeros((10, 10))
-        perclass_tot = torch.zeros(10)
+        predict_matrix = np.zeros((output_dim, output_dim))
+        perclass_tot = torch.zeros(output_dim)
+    if(options.classes):
+        perclass_tot = torch.zeros(output_dim)
+        perclass_corr = torch.zeroes(output_dim)
     with torch.no_grad():
         topk = [1, 3, 5, 10]
         correct = {k: 0 for k in topk}
@@ -85,6 +130,12 @@ def get_zeroshot_metrics(model, processor, test_dataloader, options):
                 for i in range(len(label)):
                     predict_matrix[label[i]][ranks[0][i]] += 1
                     perclass_tot[label[i]]+=1
+            if(options.classes):
+                predictions = predictions.to('cpu')
+                label = label.to('cpu')
+                for i in range(len(label)):
+                    perclass_corr[label[i]] += label[i] == ranks[0][i]
+                    perclass_tot[label[i]]+=1
     if(options.predict):
         class_10 =  ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
         import matplotlib.pyplot as plt
@@ -102,6 +153,10 @@ def get_zeroshot_metrics(model, processor, test_dataloader, options):
             plt.title('Distribution of Examples for Class ' + class_10[i] + ": Easy Zero Shot" )
             plt.savefig("predict-easy/cifar10_zero_" + class_10[i] + ".png")
             plt.clf()
+    if(options.classes != None):
+        with open(options.classes, 'w', encoding='UTF8', newline = '') as f:
+            for i in range(len(perclass_corr)):
+                f.write(str((perclass_corr[i]/perclass_tot[i]).item()) + "\n")
     results = {f"zeroshot_top{k}": correct[k] / test_dataloader.num_samples for k in topk}
     logging.info("Finished zeroshot testing")
 
@@ -261,13 +316,9 @@ def get_linear_probe_metrics(model, train_dataloader, test_dataloader, options):
             plt.title('Distribution of Examples for Class ' + class_10[i] + ": Easy Linear Probe" )
             plt.savefig("predict-easy/cifar10_linear_" + class_10[i] + ".png")
             plt.clf()
-    if(options.classes):
-        import matplotlib.pyplot as plt
-        perclass_corr[134] += perclass_corr[517]
-        perclass_tot[134] += perclass_tot[517]
+    if(options.classes != None):
+       
         
-        perclass_corr = np.delete(perclass_corr, [517])
-        perclass_tot = np.delete(perclass_tot, [517])
         #to_sort = []
         #for i in range(len(perclass_corr)):
         #    to_sort.append(((partition[i]), str((perclass_corr[i]/perclass_tot[i]).item()), str(perclass_tot[i]), list(partition2.keys())[i]))
@@ -276,7 +327,7 @@ def get_linear_probe_metrics(model, train_dataloader, test_dataloader, options):
         #    per_class.write(str(i[0]) + " " + i[1] + " " + i[2] + " " + i[3] + "\n")
         #plt.xlim(0,10)
         #plt.savefig('perclass_acc_2')
-        with open('/home/arnavj/multimodal-learning/clip_train_eval/class-random.csv', 'w', encoding='UTF8', newline = '') as f:
+        with open(options.classes, 'w', encoding='UTF8', newline = '') as f:
             for i in range(len(perclass_corr)):
                 f.write(str((perclass_corr[i]/perclass_tot[i]).item()) + "\n")
 
