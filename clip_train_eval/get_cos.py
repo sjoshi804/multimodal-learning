@@ -30,19 +30,19 @@ for i in tqdm(range(X1.shape[0] // block_size + 1)):
     
 similarity_matrix = np.block(similarity_matrices).astype(np.float16)
 sorted_matrix = np.sort(similarity_matrix)
-
+'''
 plt.plot(sorted_matrix.tolist())
 plt.ylabel("Cos Similarity")
 plt.title("Cosine Similarity Distribution")
 plt.xlabel('Index')
 #plt.xlim(1000,200000)
 plt.savefig('cos_full2.png')
+
 '''
 inds = similarity_matrix.argsort()
 f = open('/home/arnavj/multimodal-learning/clip_train_eval/dsets/full_data.csv', 'r', encoding='UTF8', newline = '')
 lines = f.readlines()
-with open('/home/arnavj/multimodal-learning/clip_train_eval/dsets/sorted_full', 'w', encoding='UTF8', newline = '') as f:
+with open('/home/arnavj/multimodal-learning/clip_train_eval/analysis/sorted_inds.pickle', 'wb') as f:
 
-    for i in inds:
-        f.write(lines[i + 1 ]) 
-'''
+    pickle.dump(inds, f)
+

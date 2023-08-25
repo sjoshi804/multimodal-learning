@@ -25,7 +25,7 @@ with torch.no_grad():
     batch_image = []
     batch_text = []
     cos = CosineSimilarity(dim = 1, eps = 1e-6)
-    df = pd.read_csv('/home/arnavj/multimodal-learning/clip_train_eval/dsets/full_data.csv', sep=',')
+    df = pd.read_csv('/home/arnavj/multimodal-learning/clip_train_eval/dsets/cifar10_like_cc_train.csv', sep=',')
     
     lines = len(df.index)
     counter = 0
@@ -33,14 +33,14 @@ with torch.no_grad():
     results = {}
     for index, row in tqdm(df.iterrows()):
         try:
-            image = preprocess(Image.open(f'{row.file}'))
+            image = preprocess(Image.open(f'{row.path}'))
             text = clip.tokenize(row.caption)
             
         except Exception as e:
             print(str(e))
             df.drop(index, inplace=True)
             continue
-        if len(batch_image) < 8192:
+        if len(batch_image) < 512:
             #print(image.size())
             #print(text.size())
             batch_image.append(image.unsqueeze(dim=0))
@@ -81,7 +81,9 @@ with torch.no_grad():
     del text_features
     torch.cuda.empty_cache()
     df = df.reset_index(drop=True)
-    df.to_csv("/home/arnavj/multimodal-learning/clip_train_eval/dsets/full_data.csv", index=False, sep=',', encoding='utf-8')
-
-    torch.save(text_embeds, "full_text_embeds.pt")
-    torch.save(image_embeds, "full_image_embeds.pt")
+    #df.to_csv("/home/arnavj/multimodal-learning/clip_train_eval/dsets/full_data.csv", index=False, sep=',', encoding='utf-8')
+    print(len(df['caption']))
+    text_embeds = torch.Tensor(text_embeds)
+    image_embeds = torch.Tensor(image_embeds)
+    torch.save(text_embeds, "cifar_like_text_embeds.pt")
+    torch.save(image_embeds, "cifar_like_image_embeds.pt")

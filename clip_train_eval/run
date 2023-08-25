@@ -1,0 +1,55 @@
+#!/bin/bash
+
+runName=$1
+
+lpName="${runName}_eval"
+device=$2
+beginEpoch=30
+endEpoch=30
+batch_size=256
+# LP args
+eval_data_types=("Caltech101" "CIFAR10" "CIFAR100" "DTD" "FGVCAircraft" "Flowers102" "Food101" "GTSRB" "ImageNet1K" "OxfordIIITPet" "RenderedSST2" "STL10")
+eval_train=("caltech-101/train" "cifar10" "cifar100" "dtd" "fgvc-aircraft-2013b" "flowers-102" "food-101" "gtsrb" "ILSVRC/train" "oxford-iiit-pet" "rendered-sst2" "stl10_binary")
+eval_test=("caltech-101/test" "cifar10" "cifar100" "dtd" "fgvc-aircraft-2013b" "flowers-102" "food-101" "gtsrb" "ILSVRC/test" "oxford-iiit-pet" "rendered-sst2" "stl10_binary")
+mkdir -p "logs2/$runName"
+mkdir -p "logs2/$runName/LP_output_logs"
+mkdir -p "logs2/$runName/ZS_output_logs"
+for eval_data_type in "${eval_data_types[@]}"
+do
+
+mkdir -p "logs2/$runName/LP_output_logs/$eval_data_type"
+mkdir -p "logs2/$runName/ZS_output_logs/$eval_data_type"
+done
+
+# poison eval args
+dataset='imagenet50'
+poison_path='../1M_random_poison_1_50_info.csv'​
+for ((i=$beginEpoch; i<=$endEpoch; i=i+2))
+do
+    checkpointPath="logs/$runName/checkpoints/epoch_$i.pt"
+    
+    # get clean similarity
+    # python -m src.main --name $runName --train_data $cleanDataPath --validation_data $validationPath --image_key path --caption_key caption --device_id $device --batch_size $batch_size --epoch $i --checkpoint $checkpointPath  --representation 
+    # wait
+    for ((x=0; x<${#eval_data_types[@]}; x++))
+    do
+        eval_data_type=${eval_data_types[$x]}
+        eval_train_data_dir="/data/${eval_train[$x]}"
+        eval_test_data_dir="/data/${eval_test[$x]}"
+        echo $eval_data_type
+        echo $eval_train_data_dir
+        # get LP accuracy
+        python -m src.main --name $lpName --eval_data_type $eval_data_type --eval_train_data_dir $eval_train_data_dir --eval_test_data_dir $eval_test_data_dir --device_id $device --checkpoint $checkpointPath --linear_probe 
+        wait
+        cp "logs/$lpName/output.log" "logs2/$runName/LP_output_logs/$eval_data_type/output_epoch$i.log" 
+        wait
+        # get ZS accuracy
+        python -m src.main --name $lpName --eval_data_type $eval_data_type  --eval_test_data_dir $eval_test_data_dir --device_id $device --checkpoint $checkpointPath
+        wait
+        cp "logs/$lpName/output.log" "logs2/$runName/ZS_output_logs/$eval_data_type/output_epoch$i.log" 
+        wait
+    done 
+    # get poison evals 
+#     python verify_with_template_full.py --model_name $runName --device $device --epoch $i --dataset $dataset --path $poison_path --distributed
+#     wait
+done

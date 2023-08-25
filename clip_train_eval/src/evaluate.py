@@ -242,11 +242,11 @@ def get_linear_probe_metrics(model, train_dataloader, test_dataloader, options):
     perclass_corr = torch.zeros(output_dim)
     perclass_tot = torch.zeros(output_dim)
     import pickle
-    partition_file = open('/home/arnavj/multimodal-learning/clip_train_eval/analysis/rand_class_size', 'rb')
-    partition = pickle.load(partition_file)
-    partition_file2 = open('/home/arnavj/multimodal-learning/clip_train_eval/analysis/partition_imagenet_like', 'rb')
-    partition2 = pickle.load(partition_file2)
-    per_class = open('/home/arnavj/multimodal-learning/clip_train_eval/analysis/per_class', 'w', encoding='UTF8', newline = '')
+    #partition_file = open('/home/arnavj/multimodal-learning/clip_train_eval/analysis/rand_class_size', 'rb')
+    #partition = pickle.load(partition_file)
+    #partition_file2 = open('/home/arnavj/multimodal-learning/clip_train_eval/analysis/partition_imagenet_like', 'rb')
+    #partition2 = pickle.load(partition_file2)
+    #per_class = open('/home/arnavj/multimodal-learning/clip_train_eval/analysis/per_class', 'w', encoding='UTF8', newline = '')
     pbar = tqdm(range(options.linear_probe_num_epochs))
     for epoch in pbar:
         cbar = tqdm(train_dataloader, leave = False)

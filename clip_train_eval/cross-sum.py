@@ -11,21 +11,23 @@ from pkg_resources import packaging
 from PIL import Image 
 from tqdm import tqdm 
 import torch
-from random import shuffle
 import pickle
-percent = 0.3526
-f = open('/home/arnavj/multimodal-learning/clip_train_eval/dsets/full_data.csv', 'r', encoding='UTF8', newline = '')
+import math
+
+
+percent = 0.48
+f = open('/home/arnavj/multimodal-learning/clip_train_eval/dsets/imagenet_like_train2.csv', 'r', encoding='UTF8', newline = '')
 lines = f.readlines()
-partition_file = open('analysis/partition_cluster', 'rb')
+partition_file = open('analysis/partition_imagenet_like', 'rb')
 partition = pickle.load(partition_file)
 indices = {}
 curr_best = {}
 lens = {}
 full = set()
 indices2 = set()
-for i in tqdm(range(0, 998)):
+for i in tqdm(range(0, 1000)):
     indices[i] = []
-    similarities = np.load(open('/home/arnavj/multimodal-learning/clip_train_eval/image-text-full-cos-sim/' + str(i) + '.npy', 'rb'))
+    similarities = np.load(open('/home/arnavj/multimodal-learning/subset_creation/image_text-cos-sim/' + str(i) + '.npy', 'rb'))
     #similarities = np.load(open('image_text-cos-sim/' + str(i) + '.npy', 'rb'))
     #similarities += np.load(open('text_text-cos-sim/' + str(i) + '.npy', 'rb'))
     #similarities = np.load(open('/home/arnavj/multimodal-learning/clip_train_eval/text_text-cos-sim/' + str(i) + '.npy', 'rb'))
@@ -34,7 +36,7 @@ for i in tqdm(range(0, 998)):
     similarities = similarities + similarities.transpose()
     similarities = similarities.astype(np.float32)
     lens[i] = len(similarities)
-    num_elements = int(len(similarities) * percent)
+    num_elements = math.ceil(len(similarities) * percent)
     #num_elements = len(similarities)
     conversion = partition[list(partition.keys())[i]]
     if(len(similarities) != len(conversion )):
@@ -65,10 +67,8 @@ for i in range(0, 998):
 print(len(full))
 '''
 print(len(full))
-full = list(full)
-shuffle(full)
-with open('/home/arnavj/multimodal-learning/clip_train_eval/dsets/cross1M.csv', 'w', encoding='UTF8', newline = '') as f:
-    f.write("caption,file\n")
-    for i in range(0,min(len(full),1000000)):
-        f.write(lines[full[i] + 1 ])  
+with open('/home/arnavj/multimodal-learning/clip_train_eval/dsets/cross-sum60.csv', 'w', encoding='UTF8', newline = '') as f:
+
+    for i in full:
+        f.write(lines[i + 1 ])  
 
