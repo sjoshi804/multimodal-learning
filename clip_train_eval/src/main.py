@@ -172,7 +172,7 @@ def worker(rank, options, logger):
 
             metrics = evaluate(epoch, model, processor, data, options)
 
-            if(options.master and (epoch % 5 == 0 or epoch == 1)):
+            if(options.master and (epoch == 25 or epoch == 30)):
                 checkpoint = {"epoch": epoch, "name": options.name, "state_dict": model.state_dict(), "optimizer": optimizer.state_dict()}
                 torch.save(checkpoint, os.path.join(options.checkpoints_dir_path, f"epoch_{epoch}.pt"))
                 if("loss" in metrics):
