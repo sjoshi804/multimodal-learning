@@ -12,7 +12,9 @@ from tqdm import tqdm
 import torch
 from torch.nn import CosineSimilarity
 import time
+print("Torch version:",torch.__version__)
 
+print("Is CUDA enabled?",torch.cuda.is_available())
 model, preprocess = clip.load("ViT-B/32")
 
 model.eval()
@@ -25,7 +27,7 @@ with torch.no_grad():
     batch_image = []
     batch_text = []
     cos = CosineSimilarity(dim = 1, eps = 1e-6)
-    df = pd.read_csv('/home/arnavj/multimodal-learning/clip_train_eval/dsets/cifar10_like_cc_train.csv', sep=',')
+    df = pd.read_csv('/home/arnavj/multimodal-learning/clip_train_eval/dsets/full_data.csv', sep=',')
     
     lines = len(df.index)
     counter = 0
@@ -85,5 +87,5 @@ with torch.no_grad():
     print(len(df['caption']))
     text_embeds = torch.Tensor(text_embeds)
     image_embeds = torch.Tensor(image_embeds)
-    torch.save(text_embeds, "cifar_like_text_embeds.pt")
-    torch.save(image_embeds, "cifar_like_image_embeds.pt")
+    torch.save(text_embeds, "full_model_text_embeds.pt")
+    torch.save(image_embeds, "full_model_image_embeds.pt")

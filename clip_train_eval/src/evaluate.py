@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm    
 from .scheduler import cosine_scheduler
-
+import pickle
 def get_validation_metrics(model, dataloader, options):
     logging.info("Started validating")
 
@@ -89,6 +89,9 @@ def get_zeroshot_metrics(model, processor, test_dataloader, options):
 
     config = eval(open(f"{options.eval_test_data_dir}/classes.py", "r").read())
     classes, templates = config["classes"], config["templates"]
+    partition_file2 = open('/home/arnavj/multimodal-learning/clip_train_eval/analysis/predict_zero_imagenet_like.pickle', 'rb')
+    partition2 = pickle.load(partition_file2)
+    #per_class = open('/home/arnavj/multimodal-learning/clip_train_eval/analysis/per_class', 'w', encoding='UTF8', newline = '')
     if options.class_subset:
         sub_class = [134, 254, 288, 291, 292, 308, 309, 312, 323, 341, 414, 417, 425, 429, 430, 435, 456, 460, 463, 468, 470, 472, 476, 483, 487, 492, 494, 497, 498, 506, 524, 525, 531, 535, 537, 552, 577, 578, 579, 581, 605, 619, 625, 642, 649, 654, 667, 669, 672, 678, 697, 702, 704, 705, 713, 717, 720, 725, 732, 737, 749, 750, 753, 760, 766, 777, 781, 786, 794, 804, 816, 818, 824, 833, 836, 838, 846, 850, 865, 867, 878, 882, 888, 889, 893, 907, 915, 916, 922, 927, 950, 953, 957, 962, 965, 967, 971, 972, 975, 977, 978, 981, 986, 988, 997]
         classes = [x for idx, x in enumerate(classes) if idx in sub_class]
@@ -109,9 +112,11 @@ def get_zeroshot_metrics(model, processor, test_dataloader, options):
         perclass_tot = torch.zeros(output_dim)
     if(options.classes):
         perclass_tot = torch.zeros(output_dim)
-        perclass_corr = torch.zeroes(output_dim)
+        perclass_corr = torch.zeros(output_dim)
     with torch.no_grad():
         topk = [1, 3, 5, 10]
+        if output_dim < 3:
+            topk = [1]
         correct = {k: 0 for k in topk}
         
         for image, label in tqdm(test_dataloader):
@@ -133,6 +138,7 @@ def get_zeroshot_metrics(model, processor, test_dataloader, options):
             if(options.classes):
                 predictions = predictions.to('cpu')
                 label = label.to('cpu')
+                ranks = ranks.to('cpu')
                 for i in range(len(label)):
                     perclass_corr[label[i]] += label[i] == ranks[0][i]
                     perclass_tot[label[i]]+=1
@@ -154,9 +160,22 @@ def get_zeroshot_metrics(model, processor, test_dataloader, options):
             plt.savefig("predict-easy/cifar10_zero_" + class_10[i] + ".png")
             plt.clf()
     if(options.classes != None):
+        with open('/home/arnavj/multimodal-learning/clip_train_eval/imagenet_perclass', 'w', encoding='UTF8', newline = '') as f:
+            for i in range(len(perclass_corr)):
+                f.write((str((perclass_corr[i]/perclass_tot[i]).item()) + " "  + classes[list(partition2.keys())[i]]) + "\n")
+        #for i in range(len(perclass_corr)):
+        #    to_sort.append(((partition[i]), str((perclass_corr[i]/perclass_tot[i]).item()), str(perclass_tot[i]), list(partition2.keys())[i]))
+        #to_sort.sort()
+        #for i in to_sort:    
+        #    per_class.write(str(i[0]) + " " + i[1] + " " + i[2] + " " + i[3] + "\n")
+        #plt.xlim(0,10)
+        #plt.savefig('perclass_acc_2')
+        '''
         with open(options.classes, 'w', encoding='UTF8', newline = '') as f:
             for i in range(len(perclass_corr)):
                 f.write(str((perclass_corr[i]/perclass_tot[i]).item()) + "\n")
+        '''
+    
     results = {f"zeroshot_top{k}": correct[k] / test_dataloader.num_samples for k in topk}
     logging.info("Finished zeroshot testing")
 

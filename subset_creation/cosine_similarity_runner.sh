@@ -13,7 +13,7 @@ run_prefix=$8
 # Loop through latent class indices and call cosine_similarity.py
 for (( i=$latent_class_start_idx; i<=$latent_class_end_idx; i++ ))
 do
-    python cosine_similarity.py \
+    python /home/arnavj/multimodal-learning/subset_creation/cosine_similarity.py \
         --partition $partition \
         --x1 $x1 \
         --x2 $x2 \

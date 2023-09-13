@@ -108,7 +108,7 @@ def sparse2coarse(targets):
 class ImageLabelDataset(Dataset):
     def __init__(self, root, transform):
         self.root = root
-        df = pd.read_csv(os.path.join(root, "labels.csv"), on_bad_lines='skip',index_col=0)
+        df = pd.read_csv(os.path.join(root, "labels.csv"), on_bad_lines='skip')
         '''
         print(df)
         sub_class = [134, 254, 288, 291, 292, 308, 309, 312, 323, 341, 414, 417, 425, 429, 430, 435, 456, 460, 463, 468, 470, 472, 476, 483, 487, 492, 494, 497, 498, 506, 524, 525, 531, 535, 537, 552, 577, 578, 579, 581, 605, 619, 625, 642, 649, 654, 667, 669, 672, 678, 697, 702, 704, 705, 713, 717, 720, 725, 732, 737, 749, 750, 753, 760, 766, 777, 781, 786, 794, 804, 816, 818, 824, 833, 836, 838, 846, 850, 865, 867, 878, 882, 888, 889, 893, 907, 915, 916, 922, 927, 950, 953, 957, 962, 965, 967, 971, 972, 975, 977, 978, 981, 986, 988, 997]
@@ -171,7 +171,6 @@ def get_eval_test_dataloader(options, processor):
         dataset = ImageLabelDataset(root = options.eval_test_data_dir, transform = processor.process_image)
     else:
         raise Exception(f"Eval test dataset type {options.eval_data_type} is not supported")
-    #print("a")
     dataloader = torch.utils.data.DataLoader(dataset, batch_size = options.batch_size, num_workers = options.num_workers, sampler = None)
     dataloader.num_samples = len(dataset)
     dataloader.num_batches = len(dataloader)
@@ -193,7 +192,7 @@ def get_eval_train_dataloader(options, processor):
     elif(options.eval_data_type == "FGVCAircraft"):
         dataset = torchvision.datasets.FGVCAircraft(root = os.path.dirname(options.eval_train_data_dir), download = True, split = "trainval", transform = processor.process_image)
     elif(options.eval_data_type == "Flowers102"):
-        dataset = torchvision.datasets.Flowers102(root = os.path.dirname(options.eval_test_data_dir), download = True, split = "test", transform = processor.process_image)
+        dataset = torchvision.datasets.Flowers102(root = os.path.dirname(options.eval_train_data_dir), download = True, split = "train", transform = processor.process_image)
     elif(options.eval_data_type == "Food101"):
         dataset = torchvision.datasets.Food101(root = os.path.dirname(options.eval_train_data_dir), download = True, split = "train", transform = processor.process_image)
     elif(options.eval_data_type == "GTSRB"):

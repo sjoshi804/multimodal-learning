@@ -27,7 +27,7 @@ if __name__ == "__main__":
     X1 = torch.load(args.x1, map_location=device)
     X2 = torch.load(args.x2, map_location=device)
     latent_classes = list(partition.keys())
-
+    
     save_dir = f"{args.run_prefix}-cos-sim"
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)

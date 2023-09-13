@@ -10,8 +10,8 @@ def partition_by_caption(classes: List[str], captions: List[str], partition_func
 
     def latent_class_in_caption(caption: str, latent_class: str):
         latent_classes = [latent_class]
-        if "/" in latent_class:
-            latent_classes = latent_class.split("/")
+        if "," in latent_class:
+            latent_classes = latent_class.split(",")
             latent_classes = [word.strip() for word in latent_classes]
         return any([lc in caption for lc in latent_classes])
     
